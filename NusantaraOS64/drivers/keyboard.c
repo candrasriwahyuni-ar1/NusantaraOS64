@@ -92,14 +92,14 @@ static bool keyboard_initialized = false;
  * Read a byte from keyboard controller
  */
 static u8 keyboard_read_byte(void) {
-    return __builtin_ia32_inbyte(KEYBOARD_DATA_PORT);
+    return ({ u8 _v; __asm__ volatile("inb %1, %0" : "=a"(_v) : "d"(KEYBOARD_DATA_PORT)); _v; });
 }
 
 /*
  * Wait for keyboard controller to be ready
  */
-static void keyboard_wait(void) {
-    while (__builtin_ia32_inbyte(KEYBOARD_STATUS_PORT) & 0x02);
+static void __attribute__((unused)) keyboard_wait(void) {
+    while (({ u8 _v; __asm__ volatile("inb %1, %0" : "=a"(_v) : "d"(KEYBOARD_STATUS_PORT)); _v; }) & 0x02);
 }
 
 /*

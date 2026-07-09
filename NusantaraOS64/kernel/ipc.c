@@ -397,7 +397,7 @@ s64 sys_shm_attach(s64 shm_id) {
     
     /* Cek sudah attached */
     for (u32 i = 0; i < shm->attach_count; i++) {
-        if (shm->attached_procs[i] == (u64)current->pid) {
+        if (shm->attached_procs[i] == (u64)(s64)current->pid) {
             spinlock_release(&ipc_lock);
             return (s64)shm->virt_addr; /* Already attached */
         }
@@ -438,7 +438,7 @@ s64 sys_shm_detach(s64 shm_id) {
     
     /* Remove dari attached list */
     for (u32 i = 0; i < shm->attach_count; i++) {
-        if (shm->attached_procs[i] == (u64)current->pid) {
+        if (shm->attached_procs[i] == (u64)(s64)current->pid) {
             for (u32 j = i; j < shm->attach_count - 1; j++) {
                 shm->attached_procs[j] = shm->attached_procs[j + 1];
             }

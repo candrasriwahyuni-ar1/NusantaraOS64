@@ -206,6 +206,7 @@ s64 sys_exec(const char *path, char **argv) {
     }
     
     console_printf("EXEC: %s\n", path);
+    (void)argv; /* Unused parameter - stub implementation */
     
     /* In a real implementation, this would:
      * 1. Load the executable from disk

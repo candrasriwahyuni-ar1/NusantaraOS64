@@ -40,14 +40,16 @@ BOOT_ASM = $(wildcard $(BOOT_DIR)/*.S)
 KERNEL_C = $(wildcard $(KERNEL_DIR)/*.c)
 DRIVERS_C = $(wildcard $(DRIVERS_DIR)/*.c)
 LIB_C = $(wildcard $(LIB_DIR)/*.c)
+FS_C = $(wildcard fs/*.c)
 
 # Object files
 BOOT_OBJ = $(patsubst $(BOOT_DIR)/%.S,$(BUILD_DIR)/boot/%.o,$(BOOT_ASM))
 KERNEL_OBJ = $(patsubst $(KERNEL_DIR)/%.c,$(BUILD_DIR)/kernel/%.o,$(KERNEL_C))
 DRIVERS_OBJ = $(patsubst $(DRIVERS_DIR)/%.c,$(BUILD_DIR)/drivers/%.o,$(DRIVERS_C))
 LIB_OBJ = $(patsubst $(LIB_DIR)/%.c,$(BUILD_DIR)/lib/%.o,$(LIB_C))
+FS_OBJ = $(patsubst fs/%.c,$(BUILD_DIR)/fs/%.o,$(FS_C))
 
-ALL_OBJ = $(BOOT_OBJ) $(KERNEL_OBJ) $(DRIVERS_OBJ) $(LIB_OBJ)
+ALL_OBJ = $(BOOT_OBJ) $(KERNEL_OBJ) $(DRIVERS_OBJ) $(LIB_OBJ) $(FS_OBJ)
 
 # Default target
 all: dirs $(KERNEL_BIN)
@@ -90,6 +92,11 @@ $(BUILD_DIR)/drivers/%.o: $(DRIVERS_DIR)/%.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 # Compile library C files
+
+# Compile filesystem C files
+$(BUILD_DIR)/fs/%.o: fs/%.c
+	@echo "[CC] $<"
+	$(CC) $(CFLAGS) -o $@ $<
 $(BUILD_DIR)/lib/%.o: $(LIB_DIR)/%.c
 	@echo "[CC] $<"
 	$(CC) $(CFLAGS) -o $@ $<

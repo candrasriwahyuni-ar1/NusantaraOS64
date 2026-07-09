@@ -3,10 +3,8 @@
 *.o
 *.obj
 *.out
-*.exe
-*.dll
-*.so
-*.a
+build/
+dist/
 
 # Dependencies
 node_modules/
@@ -23,16 +21,18 @@ target/
 *.tmp
 *.swp
 
+# Environment
+.env
+.env.local
+*.env.*
+
 # Editors
 .vscode/
 .idea/
 
-# System files
+# OS specific
 .DS_Store
 Thumbs.db
-.env
-.env.local
-*.env.*
 
 # Coverage
 coverage/

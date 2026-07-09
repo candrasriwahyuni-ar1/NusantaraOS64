@@ -38,12 +38,12 @@ int nusa_open(const char *pathname, int flags) {
     return (int)syscall(SYS_OPEN, (uint64_t)pathname, (uint64_t)flags, 0, 0, 0);
 }
 
-ssize_t nusa_read(int fd, void *buf, size_t count) {
-    return (ssize_t)syscall(SYS_READ, (uint64_t)fd, (uint64_t)buf, (uint64_t)count, 0, 0);
+int64_t nusa_read(int fd, void *buf, size_t count) {
+    return (int64_t)syscall(SYS_READ, (uint64_t)fd, (uint64_t)buf, (uint64_t)count, 0, 0);
 }
 
-ssize_t nusa_write(int fd, const void *buf, size_t count) {
-    return (ssize_t)syscall(SYS_WRITE, (uint64_t)fd, (uint64_t)buf, (uint64_t)count, 0, 0);
+int64_t nusa_write(int fd, const void *buf, size_t count) {
+    return (int64_t)syscall(SYS_WRITE, (uint64_t)fd, (uint64_t)buf, (uint64_t)count, 0, 0);
 }
 
 int nusa_close(int fd) {
