@@ -1,1 +1,1 @@
-# NusantaraOS-Kiosk
+# NusantaraOS64
