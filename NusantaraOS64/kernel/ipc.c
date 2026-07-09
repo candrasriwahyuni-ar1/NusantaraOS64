@@ -14,6 +14,19 @@
 
 #include "../include/nusantara.h"
 
+/* String helper functions (freestanding environment) */
+static void ipc_strncpy(char *dest, const char *src, unsigned long n) {
+    unsigned long i = 0;
+    while (i < n - 1 && src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    while (i < n) {
+        dest[i] = '\0';
+        i++;
+    }
+}
+
 /* ============================================
  * Global IPC State
  * ============================================ */
@@ -344,8 +357,7 @@ s64 sys_shm_create(const char *name, u64 size) {
     for (u32 i = 0; i < MAX_SHM; i++) {
         if (shm_table[i].id == 0) {
             shm_table[i].id = next_shm_id++;
-            strncpy(shm_table[i].name, name, 31);
-            shm_table[i].name[31] = '\0';
+            ipc_strncpy(shm_table[i].name, name, 32);
             shm_table[i].size = size;
             shm_table[i].owner = get_current_process()->pid;
             shm_table[i].attach_count = 0;

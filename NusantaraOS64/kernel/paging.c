@@ -189,7 +189,7 @@ process_t *create_process_address_space(void) {
     }
     
     memset(proc, 0, sizeof(process_t));
-    proc->page_table = (u64 *)proc_pml4;  /* Cast to u64* for storage */
+    proc->page_table = (void *)(u64)proc_pml4;  /* Cast to void* to avoid alignment warning */
     
     return proc;
 }

@@ -25,6 +25,15 @@ extern s64 sys_shm_attach(s64 shm_id);
 extern s64 sys_shm_detach(s64 shm_id);
 extern s64 sys_sleep(u64 ms);
 
+/* Forward declarations for syscall functions */
+s64 sys_read(int fd, void *buf, size_t count);
+s64 sys_write(int fd, const char *buf, size_t count);
+s64 sys_open(const char *path, int flags);
+s64 sys_close(int fd);
+s64 sys_fork(void);
+s64 sys_exec(const char *path, char **argv);
+void sys_exit(int status);  /* Match declaration in nusantara.h */
+
 /*
  * System call handler
  * Called from assembly syscall_entry

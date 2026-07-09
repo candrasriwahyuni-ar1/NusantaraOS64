@@ -1,10 +1,12 @@
 ```
-# Build artifacts
+# Compiled and build artifacts
 *.o
 *.obj
 *.out
-build/
-dist/
+*.exe
+*.dll
+*.so
+*.a
 
 # Dependencies
 node_modules/
@@ -16,12 +18,14 @@ __pycache__/
 target/
 .gradle/
 
-# Editor/IDE files
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Editors
 .vscode/
 .idea/
-*.swp
-*.swo
-*.tmp
 
 # System files
 .DS_Store
@@ -29,9 +33,6 @@ Thumbs.db
 .env
 .env.local
 *.env.*
-
-# Logs
-*.log
 
 # Coverage
 coverage/
