@@ -172,9 +172,10 @@ syscall_entry:
     PUSH R14
     PUSH R15
     
-    ; Call C handler
-    MOV RSP, RDI
-    CALL syscall_handler
+    ; Set up argument for C handler: pointer to trap_frame on stack
+    ; RSP currently points to the saved R15 (top of trap_frame)
+    MOV RDI, RSP          ; ✅ FIXED: Pass stack pointer as argument
+    CALL syscall_handler  ; Call C handler: void syscall_handler(trap_frame *tf)
     
     ; Restore registers
     POP R15

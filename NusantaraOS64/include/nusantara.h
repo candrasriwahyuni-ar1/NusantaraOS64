@@ -40,6 +40,11 @@ typedef size_t      size_t;
 #define PAGE_SHIFT          12
 #define STACK_SIZE          (PAGE_SIZE * 4)
 
+/* File Descriptors */
+#define STDIN_FILENO        0
+#define STDOUT_FILENO       1
+#define STDERR_FILENO       2
+
 /* Segment Selectors */
 #define GDT_KERNEL_CODE     0x08
 #define GDT_KERNEL_DATA     0x10

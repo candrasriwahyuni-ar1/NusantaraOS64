@@ -164,7 +164,7 @@ static int initramfs_stat(mount_point_t* mp, const char* path, stat_t* st) {
 // ============================================================================
 
 void vfs_init(void) {
-    kprintf("[VFS] Initializing Virtual File System...\n");
+    console_printf("[VFS] Initializing Virtual File System...\n");
     
     // Reset file descriptor table
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
@@ -185,7 +185,7 @@ void vfs_init(void) {
     root_mp->ops = &initramfs_ops;
     root_mp->root = NULL;
     
-    kprintf("[VFS] Mounted initramfs at /\n");
+    console_printf("[VFS] Mounted initramfs at /\n");
     
     // Setup stdin/stdout/stderr
     for (int i = 0; i < 3; i++) {
@@ -197,7 +197,7 @@ void vfs_init(void) {
         open_files[i].data = NULL;
     }
     
-    kprintf("[VFS] VFS initialized with %d entries in initramfs\n", 
+    console_printf("[VFS] VFS initialized with %d entries in initramfs\n", 
             INITRAMFS_ENTRY_COUNT);
 }
 
@@ -233,7 +233,7 @@ int vfs_open(const char* path, int flags) {
     // Cari mount point
     mount_point_t* mp = vfs_find_mount(path);
     if (!mp) {
-        kprintf("[VFS] No mount point for: %s\n", path);
+        console_printf("[VFS] No mount point for: %s\n", path);
         return -ERR_NOTFOUND;
     }
     
@@ -286,7 +286,7 @@ int vfs_write(int fd, const void* buf, int size) {
         // Tulis ke console
         const char* str = (const char*)buf;
         for (int i = 0; i < size; i++) {
-            putchar(str[i]);
+            console_putchar(str[i]);
         }
         return size;
     }
@@ -415,13 +415,13 @@ int vfs_mount(const char* device, const char* path, fs_type_t fs_type) {
             break;
         case FS_FAT32:
             // TODO: Implementasi FAT32
-            kprintf("[VFS] FAT32 support not yet implemented\n");
+            console_printf("[VFS] FAT32 support not yet implemented\n");
             return -ERR_NOTSUPP;
         default:
             return -ERR_INVALID;
     }
     
-    kprintf("[VFS] Mounted %s at %s (type: %d)\n", device, path, fs_type);
+    console_printf("[VFS] Mounted %s at %s (type: %d)\n", device, path, fs_type);
     
     return ERR_OK;
 }
@@ -434,7 +434,7 @@ int vfs_unmount(const char* path) {
         if (mount_points[i].mounted && strcmp(mount_points[i].path, path) == 0) {
             // TODO: Check apakah ada file yang masih terbuka
             mount_points[i].mounted = 0;
-            kprintf("[VFS] Unmounted %s\n", path);
+            console_printf("[VFS] Unmounted %s\n", path);
             return ERR_OK;
         }
     }
@@ -444,9 +444,9 @@ int vfs_unmount(const char* path) {
 
 // List semua mount points
 void vfs_list_mounts(void) {
-    kprintf("\n=== MOUNTED FILESYSTEMS ===\n");
-    kprintf("%-20s %-10s %s\n", "PATH", "TYPE", "DEVICE");
-    kprintf("----------------------------------------\n");
+    console_printf("\n=== MOUNTED FILESYSTEMS ===\n");
+    console_printf("%-20s %-10s %s\n", "PATH", "TYPE", "DEVICE");
+    console_printf("----------------------------------------\n");
     
     for (int i = 0; i < MAX_MOUNT_POINTS; i++) {
         if (mount_points[i].mounted) {
@@ -455,18 +455,18 @@ void vfs_list_mounts(void) {
                 case FS_INITRAMFS: type_str = "initramfs"; break;
                 case FS_FAT32: type_str = "FAT32"; break;
             }
-            kprintf("%-20s %-10s %s\n", 
+            console_printf("%-20s %-10s %s\n", 
                     mount_points[i].path, 
                     type_str,
                     mount_points[i].device ? mount_points[i].device : "(none)");
         }
     }
-    kprintf("=========================\n\n");
+    console_printf("=========================\n\n");
 }
 
 // Test fungsi VFS
 void vfs_test(void) {
-    kprintf("\n=== VFS TEST ===\n");
+    console_printf("\n=== VFS TEST ===\n");
     
     // Test 1: List mount points
     vfs_list_mounts();
@@ -485,35 +485,35 @@ void vfs_test(void) {
     for (int i = 0; i < 6; i++) {
         int ret = vfs_stat(test_files[i], &st);
         if (ret == ERR_OK) {
-            kprintf("  [OK] %s: type=%d, size=%d\n", 
+            console_printf("  [OK] %s: type=%d, size=%d\n", 
                     st.name, st.type, st.size);
         } else {
-            kprintf("  [FAIL] %s: error=%d\n", test_files[i], ret);
+            console_printf("  [FAIL] %s: error=%d\n", test_files[i], ret);
         }
     }
     
     // Test 3: Read file
-    kprintf("\n  Reading /README:\n");
+    console_printf("\n  Reading /README:\n");
     int fd = vfs_open("/README", 0);
     if (fd >= 0) {
         char buf[256];
         int n = vfs_read(fd, buf, sizeof(buf) - 1);
         if (n > 0) {
             buf[n] = '\0';
-            kprintf("    %s\n", buf);
+            console_printf("    %s\n", buf);
         }
         vfs_close(fd);
     } else {
-        kprintf("    Failed to open: %d\n", fd);
+        console_printf("    Failed to open: %d\n", fd);
     }
     
     // Test 4: Read directory
-    kprintf("\n  Listing /etc:\n");
+    console_printf("\n  Listing /etc:\n");
     dirent_t de;
     de.offset = 0;
     while (vfs_readdir("/etc", &de) == ERR_OK) {
-        kprintf("    %s (%s)\n", de.name, de.type == FILE_TYPE_DIR ? "dir" : "file");
+        console_printf("    %s (%s)\n", de.name, de.type == FILE_TYPE_DIR ? "dir" : "file");
     }
     
-    kprintf("================\n\n");
+    console_printf("================\n\n");
 }
