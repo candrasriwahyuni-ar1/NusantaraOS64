@@ -2,6 +2,7 @@
  * NusantaraOS64 - Task/Process Management
  * 
  * Fase 3: Manajemen Proses & API UNIX-Like
+ * Fase 7: IPC Integration untuk blocking/wakeup
  * Implementasi PCB, context switch, dan scheduler
  */
 
@@ -13,9 +14,14 @@ static process_t *processes[MAX_PROCESSES];
 static process_t *current_process = NULL;
 static u64 next_pid = 1;
 static u32 process_count = 0;
+static u64 system_ticks = 0;
 
 /* Forward declaration */
 void timer_tick(void);
+void unblock_process(pid_t pid);
+
+/* External IPC init */
+extern void ipc_init(void);
 
 /*
  * Initialize task management system
@@ -25,10 +31,14 @@ void task_init(void) {
         processes[i] = NULL;
     }
     
+    /* Initialize IPC subsystem - Fase 7 */
+    ipc_init();
+    
     /* Create initial kernel process (idle) */
     current_process = task_create("idle", NULL);
     if (current_process) {
         current_process->state = PROCESS_RUNNING;
+        current_process->start_time = system_ticks;
     }
 }
 
@@ -185,12 +195,59 @@ void set_current_process(process_t *proc) {
  * Handle timer interrupt for preemptive scheduling
  */
 void timer_tick(void) {
+    system_ticks++;
+    
+    /* Check for sleeping processes - Fase 7 */
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (processes[i] && processes[i]->state == PROCESS_BLOCKED) {
+            if (processes[i]->sleep_until > 0) {
+                processes[i]->sleep_until--;
+                if (processes[i]->sleep_until == 0) {
+                    processes[i]->state = PROCESS_READY;
+                }
+            }
+        }
+    }
+    
+    /* Preempt every 10 ticks (adjustable) */
     static u32 tick_count = 0;
     tick_count++;
     
-    /* Preempt every 10 ticks (adjustable) */
     if (tick_count >= 10) {
         tick_count = 0;
         yield();
     }
+}
+
+/*
+ * Unblock a process by PID (for IPC wakeups) - Fase 7
+ */
+void unblock_process(pid_t pid) {
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (processes[i] && processes[i]->pid == (u64)pid) {
+            if (processes[i]->state == PROCESS_BLOCKED) {
+                processes[i]->state = PROCESS_READY;
+                return;
+            }
+        }
+    }
+}
+
+/*
+ * Get process by PID - Fase 7 utility
+ */
+process_t *get_process_by_pid(pid_t pid) {
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (processes[i] && processes[i]->pid == (u64)pid) {
+            return processes[i];
+        }
+    }
+    return NULL;
+}
+
+/*
+ * Get system ticks - Fase 7 utility
+ */
+u64 get_system_ticks(void) {
+    return system_ticks;
 }

@@ -10,6 +10,21 @@
 /* External context switch function */
 extern void context_switch(u64 *old_ctx, u64 *new_ctx);
 
+/* External IPC functions */
+extern void ipc_init(void);
+extern s64 sys_mutex_create(void);
+extern s64 sys_mutex_lock(s64 mutex_id);
+extern s64 sys_mutex_unlock(s64 mutex_id);
+extern s64 sys_sem_create(s32 initial_value);
+extern s64 sys_sem_wait(s64 sem_id);
+extern s64 sys_sem_post(s64 sem_id);
+extern s64 sys_msg_send(pid_t dest, u32 type, const void *data, u32 size);
+extern s64 sys_msg_recv(pid_t src, u32 type, void *buf, u32 max_size);
+extern s64 sys_shm_create(const char *name, u64 size);
+extern s64 sys_shm_attach(s64 shm_id);
+extern s64 sys_shm_detach(s64 shm_id);
+extern s64 sys_sleep(u64 ms);
+
 /*
  * System call handler
  * Called from assembly syscall_entry
@@ -59,6 +74,57 @@ void syscall_handler(trap_frame_t *frame) {
             
         case SYS_YIELD:
             sys_yield();
+            break;
+            
+        /* IPC & Synchronization syscalls - Fase 7 */
+        case SYS_MUTEX_CREATE:
+            ret = sys_mutex_create();
+            break;
+            
+        case SYS_MUTEX_LOCK:
+            ret = sys_mutex_lock((s64)frame->rdi);
+            break;
+            
+        case SYS_MUTEX_UNLOCK:
+            ret = sys_mutex_unlock((s64)frame->rdi);
+            break;
+            
+        case SYS_SEM_CREATE:
+            ret = sys_sem_create((s32)frame->rdi);
+            break;
+            
+        case SYS_SEM_WAIT:
+            ret = sys_sem_wait((s64)frame->rdi);
+            break;
+            
+        case SYS_SEM_POST:
+            ret = sys_sem_post((s64)frame->rdi);
+            break;
+            
+        case SYS_MSG_SEND:
+            ret = sys_msg_send((pid_t)frame->rdi, (u32)frame->rsi, 
+                               (const void *)frame->rdx, (u32)frame->r10);
+            break;
+            
+        case SYS_MSG_RECV:
+            ret = sys_msg_recv((pid_t)frame->rdi, (u32)frame->rsi,
+                               (void *)frame->rdx, (u32)frame->r10);
+            break;
+            
+        case SYS_SHM_CREATE:
+            ret = sys_shm_create((const char *)frame->rdi, (u64)frame->rsi);
+            break;
+            
+        case SYS_SHM_ATTACH:
+            ret = sys_shm_attach((s64)frame->rdi);
+            break;
+            
+        case SYS_SHM_DETACH:
+            ret = sys_shm_detach((s64)frame->rdi);
+            break;
+            
+        case SYS_SLEEP:
+            ret = sys_sleep((u64)frame->rdi);
             break;
             
         default:
