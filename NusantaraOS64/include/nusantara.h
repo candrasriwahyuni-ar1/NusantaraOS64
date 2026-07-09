@@ -84,6 +84,12 @@ typedef enum {
 } process_state_t;
 
 /* ============================================
+ * IPC & Synchronization Constants
+ * ============================================ */
+#define MAX_MSG_SIZE        256
+#define MAX_SHM_REGIONS     16
+
+/* ============================================
  * IPC & Synchronization Structures
  * ============================================ */
 
@@ -293,8 +299,7 @@ typedef struct {
  * IPC Constants
  * ============================================ */
 #define MAX_IPC_CHANNELS    64
-#define MAX_MSG_SIZE        256
-#define MAX_SHM_REGIONS     32
+/* MAX_MSG_SIZE and MAX_SHM_REGIONS already defined above for IPC structures */
 #define SEM_VALUE_MAX       32767
 
 /* ============================================

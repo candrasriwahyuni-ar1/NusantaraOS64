@@ -43,8 +43,7 @@ void syscall_handler(trap_frame_t *frame) {
             break;
             
         case SYS_READ:
-            /* Not implemented yet */
-            ret = -1;
+            ret = sys_read((int)frame->rdi, (void *)frame->rsi, (size_t)frame->rdx);
             break;
             
         case SYS_WRITE:
@@ -52,12 +51,11 @@ void syscall_handler(trap_frame_t *frame) {
             break;
             
         case SYS_OPEN:
-            /* Not implemented yet */
-            ret = -1;
+            ret = sys_open((const char *)frame->rdi, (int)frame->rsi);
             break;
             
         case SYS_CLOSE:
-            ret = 0;
+            ret = sys_close((int)frame->rdi);
             break;
             
         case SYS_WAITPID:
@@ -333,4 +331,59 @@ s64 sys_write(int fd, const char *buf, size_t count) {
     }
     
     return (s64)count;
+}
+
+/*
+ * sys_read: Read from file descriptor
+ * Currently supports fd 0 (stdin/keyboard)
+ */
+s64 sys_read(int fd, void *buf, size_t count) {
+    if (fd != 0) {  /* stdin only for now */
+        return -1;
+    }
+    
+    /* Read from keyboard buffer */
+    char *cbuf = (char *)buf;
+    size_t i = 0;
+    while (i < count) {
+        char c = keyboard_getchar();
+        if (c == 0) {
+            /* No character available, yield and retry */
+            if (i > 0) break;
+            yield();
+            continue;
+        }
+        cbuf[i++] = c;
+        if (c == '\n') break;  /* Line buffered */
+    }
+    
+    return (s64)i;
+}
+
+/*
+ * sys_open: Open a file by path
+ * Returns file descriptor or -1 on error
+ */
+s64 sys_open(const char *path, int flags) {
+    if (!path) {
+        return -1;
+    }
+    
+    /* Use VFS to open the file */
+    int fd = vfs_open(path, flags);
+    return (s64)fd;
+}
+
+/*
+ * sys_close: Close a file descriptor
+ * Returns 0 on success, -1 on error
+ */
+s64 sys_close(int fd) {
+    if (fd < 0) {
+        return -1;
+    }
+    
+    /* Use VFS to close the file */
+    int ret = vfs_close(fd);
+    return (s64)ret;
 }

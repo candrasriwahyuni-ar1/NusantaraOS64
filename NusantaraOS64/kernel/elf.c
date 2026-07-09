@@ -9,8 +9,33 @@
 
 /* Forward declarations from existing modules */
 extern void *kmalloc(size_t size);
+extern void kfree(void *ptr);
 extern void map_page(u64 virt, u64 phys, u64 flags);
 extern void console_printf(const char *fmt, ...);
+extern process_t *task_create(const char *name, void (*entry)(void));
+extern int vfs_open(const char *path, int flags);
+extern int vfs_close(int fd);
+extern int vfs_read(int fd, void *buf, int size);
+extern int vfs_stat(const char *path, stat_t *st);
+
+/* Define missing types and constants */
+#ifndef O_RDONLY
+#define O_RDONLY 0
+#endif
+
+#ifndef O_WRONLY
+#define O_WRONLY 1
+#endif
+
+#ifndef O_RDWR
+#define O_RDWR 2
+#endif
+
+#ifndef PAGE_MASK
+#define PAGE_MASK (~(PAGE_SIZE - 1))
+#endif
+
+#define USER_STACK_TOP 0x00007FFFFFFFFFFFULL
 
 #define ELF_MAGIC 0x464C457F  // "\x7FELF"
 #define ET_EXEC 2              // Executable file
@@ -50,7 +75,7 @@ typedef struct {
  */
 static int elf_validate(uint8_t *buffer, size_t size) {
     if (size < sizeof(Elf64_Ehdr)) {
-        kprintf("[ELF] Error: File terlalu kecil\n");
+        console_printf("[ELF] Error: File terlalu kecil\n");
         return -1;
     }
     
@@ -61,35 +86,35 @@ static int elf_validate(uint8_t *buffer, size_t size) {
         ehdr->e_ident[1] != 'E' || 
         ehdr->e_ident[2] != 'L' || 
         ehdr->e_ident[3] != 'F') {
-        kprintf("[ELF] Error: Bukan file ELF (magic: %x)\n", *(uint32_t*)ehdr->e_ident);
+        console_printf("[ELF] Error: Bukan file ELF (magic: %x)\n", *(uint32_t*)ehdr->e_ident);
         return -1;
     }
     
     // Cek 64-bit
     if (ehdr->e_ident[4] != 2) {  // ELFCLASS64
-        kprintf("[ELF] Error: Bukan ELF 64-bit\n");
+        console_printf("[ELF] Error: Bukan ELF 64-bit\n");
         return -1;
     }
     
     // Cek little endian
     if (ehdr->e_ident[5] != 1) {  // ELFDATA2LSB
-        kprintf("[ELF] Error: Bukan little endian\n");
+        console_printf("[ELF] Error: Bukan little endian\n");
         return -1;
     }
     
     // Cek tipe file
     if (ehdr->e_type != ET_EXEC && ehdr->e_type != ET_DYN) {
-        kprintf("[ELF] Error: Bukan executable (type: %d)\n", ehdr->e_type);
+        console_printf("[ELF] Error: Bukan executable (type: %d)\n", ehdr->e_type);
         return -1;
     }
     
     // Cek machine type (x86_64)
     if (ehdr->e_machine != 0x3E) {
-        kprintf("[ELF] Error: Bukan x86_64 (machine: %x)\n", ehdr->e_machine);
+        console_printf("[ELF] Error: Bukan x86_64 (machine: %x)\n", ehdr->e_machine);
         return -1;
     }
     
-    kprintf("[ELF] Valid: %s, entry=0x%lx, phnum=%d\n", 
+    console_printf("[ELF] Valid: %s, entry=0x%lx, phnum=%d\n", 
             ehdr->e_type == ET_EXEC ? "EXEC" : "DYN",
             ehdr->e_entry, ehdr->e_phnum);
     
@@ -116,7 +141,7 @@ int elf_load(process_t *proc, uint8_t *buffer, size_t size) {
             continue;
         }
         
-        kprintf("[ELF] Loading segment: vaddr=0x%lx, filesz=%ld, memsz=%ld\n",
+        console_printf("[ELF] Loading segment: vaddr=0x%lx, filesz=%ld, memsz=%ld\n",
                 phdr->p_vaddr, phdr->p_filesz, phdr->p_memsz);
         
         // Alokasi halaman untuk segment ini
@@ -163,8 +188,8 @@ int elf_load(process_t *proc, uint8_t *buffer, size_t size) {
         }
     }
     
-    // Set entry point
-    proc->context.rip = ehdr->e_entry;
+    // Set entry point - menggunakan field langsung di process_t
+    proc->rip = ehdr->e_entry;
     
     // Setup stack user di alamat tinggi
     uint64_t user_stack = USER_STACK_TOP - PAGE_SIZE;
@@ -179,11 +204,11 @@ int elf_load(process_t *proc, uint8_t *buffer, size_t size) {
     // Map stack menggunakan map_page
     map_page(user_stack, (uint64_t)stack_frame, 0x3);  // 0x3 = PRESENT | WRITABLE
     
-    proc->context.rsp = user_stack + PAGE_SIZE / 2;  // Tengah halaman
-    proc->context.rflags = 0x202;  // IF bit set
+    proc->rsp = user_stack + PAGE_SIZE / 2;  // Tengah halaman
+    proc->rflags = 0x202;  // IF bit set
     
     console_printf("[ELF] Loaded successfully: entry=0x%lx, rsp=0x%lx\n",
-            proc->context.rip, proc->context.rsp);
+            proc->rip, proc->rsp);
     
     return 0;
 }
@@ -192,6 +217,15 @@ int elf_load(process_t *proc, uint8_t *buffer, size_t size) {
  * Buat proses baru dari file ELF
  */
 process_t* elf_create_process(const char *filename) {
+    // Buka file via VFS - gunakan vfs_stat untuk path-based stat
+    stat_t st;
+    if (vfs_stat(filename, &st) != 0) {
+        console_printf("[ELF] Error: File '%s' tidak ditemukan\n", filename);
+        return NULL;
+    }
+    
+    console_printf("[ELF] Loading '%s' (%d bytes)...\n", filename, st.size);
+    
     // Buka file
     int fd = vfs_open(filename, O_RDONLY);
     if (fd < 0) {
@@ -199,18 +233,8 @@ process_t* elf_create_process(const char *filename) {
         return NULL;
     }
     
-    // Baca ukuran file
-    file_stat_t stat;
-    if (vfs_fstat(fd, &stat) != 0) {
-        console_printf("[ELF] Error: Gagal stat file\n");
-        vfs_close(fd);
-        return NULL;
-    }
-    
-    console_printf("[ELF] Loading '%s' (%ld bytes)...\n", filename, stat.size);
-    
     // Alokasi buffer
-    uint8_t *buffer = (uint8_t*)kmalloc(stat.size);
+    uint8_t *buffer = (uint8_t*)kmalloc(st.size);
     if (!buffer) {
         console_printf("[ELF] Error: Gagal alokasi buffer\n");
         vfs_close(fd);
@@ -218,12 +242,12 @@ process_t* elf_create_process(const char *filename) {
     }
     
     // Baca seluruh file
-    ssize_t bytes_read = vfs_read(fd, buffer, stat.size);
+    int bytes_read = vfs_read(fd, buffer, st.size);
     vfs_close(fd);
     
-    if (bytes_read != (ssize_t)stat.size) {
-        console_printf("[ELF] Error: Gagal baca file (read %ld, expected %ld)\n",
-                bytes_read, stat.size);
+    if (bytes_read != (int)st.size) {
+        console_printf("[ELF] Error: Gagal baca file (read %d, expected %d)\n",
+                bytes_read, st.size);
         kfree(buffer);
         return NULL;
     }
@@ -236,11 +260,8 @@ process_t* elf_create_process(const char *filename) {
         return NULL;
     }
     
-    // Set sebagai user process
-    proc->is_user = 1;
-    
     // Load ELF
-    if (elf_load(proc, buffer, stat.size) != 0) {
+    if (elf_load(proc, buffer, st.size) != 0) {
         console_printf("[ELF] Error: Gagal load ELF\n");
         // Cleanup: free resources manually since task_destroy may not exist
         kfree(buffer);

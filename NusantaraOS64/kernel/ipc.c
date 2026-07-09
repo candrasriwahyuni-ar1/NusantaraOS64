@@ -12,8 +12,7 @@
  * - Shared Memory
  */
 
-#include <nusantara.h>
-#include <string.h>
+#include "../include/nusantara.h"
 
 /* ============================================
  * Global IPC State
@@ -127,7 +126,7 @@ s64 sys_mutex_unlock(s64 mutex_id) {
     
     spinlock_acquire(&ipc_lock);
     
-    if (mtx->id == 0 || mtx->owner != current->pid) {
+    if (mtx->id == 0 || (u64)mtx->owner != current->pid) {
         spinlock_release(&ipc_lock);
         return -1; /* Invalid mutex atau bukan owner */
     }
@@ -149,7 +148,6 @@ s64 sys_mutex_unlock(s64 mutex_id) {
     
     /* Wake up satu proses dari wait queue */
     if (mtx->wait_count > 0) {
-        pid_t woken_pid = mtx->wait_queue[0];
         
         /* Shift wait queue */
         for (u32 i = 0; i < mtx->wait_count - 1; i++) {
@@ -238,7 +236,6 @@ s64 sys_sem_post(s64 sem_id) {
     
     if (sem->wait_count > 0) {
         /* Ada proses waiting, wake up satu */
-        pid_t woken_pid = sem->wait_queue[0];
         
         for (u32 i = 0; i < sem->wait_count - 1; i++) {
             sem->wait_queue[i] = sem->wait_queue[i + 1];
@@ -388,7 +385,7 @@ s64 sys_shm_attach(s64 shm_id) {
     
     /* Cek sudah attached */
     for (u32 i = 0; i < shm->attach_count; i++) {
-        if (shm->attached_procs[i] == current->pid) {
+        if (shm->attached_procs[i] == (u64)current->pid) {
             spinlock_release(&ipc_lock);
             return (s64)shm->virt_addr; /* Already attached */
         }
@@ -429,7 +426,7 @@ s64 sys_shm_detach(s64 shm_id) {
     
     /* Remove dari attached list */
     for (u32 i = 0; i < shm->attach_count; i++) {
-        if (shm->attached_procs[i] == current->pid) {
+        if (shm->attached_procs[i] == (u64)current->pid) {
             for (u32 j = i; j < shm->attach_count - 1; j++) {
                 shm->attached_procs[j] = shm->attached_procs[j + 1];
             }
