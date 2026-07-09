@@ -79,8 +79,49 @@ typedef enum {
 } process_state_t;
 
 /* ============================================
- * Struktur Process Control Block (PCB)
+ * IPC & Synchronization Structures
  * ============================================ */
+
+/* Mutex structure */
+typedef struct {
+    u32 id;
+    u32 locked;
+    pid_t owner;
+    pid_t wait_queue[32];
+    u32 wait_count;
+} mutex_t;
+
+/* Semaphore structure */
+typedef struct {
+    u32 id;
+    s32 value;
+    pid_t wait_queue[32];
+    u32 wait_count;
+} semaphore_t;
+
+/* Message structure for IPC */
+typedef struct {
+    pid_t sender;
+    pid_t receiver;
+    u32 type;
+    u32 size;
+    u8 data[MAX_MSG_SIZE];
+} message_t;
+
+/* Shared Memory Region */
+typedef struct {
+    u32 id;
+    char name[32];
+    u64 phys_addr;
+    u64 virt_addr;
+    u64 size;
+    pid_t owner;
+    pid_t attached_procs[16];
+    u32 attach_count;
+    bool kernel_mapped;
+} shm_region_t;
+
+/* Process Control Block (PCB) - Extended for IPC */
 typedef struct process {
     u64 pid;
     u64 ppid;
@@ -113,6 +154,20 @@ typedef struct process {
     
     /* Nama proses */
     char name[64];
+    
+    /* IPC & Synchronization */
+    mutex_t *held_mutexes[16];
+    u32 held_mutex_count;
+    message_t msg_queue[8];
+    u32 msg_head;
+    u32 msg_tail;
+    u32 msg_count;
+    shm_region_t *shm_regions[MAX_SHM_REGIONS];
+    u32 shm_count;
+    
+    /* Timing */
+    u64 start_time;
+    u64 sleep_until;
 } process_t;
 
 /* ============================================
@@ -216,6 +271,26 @@ typedef struct {
 #define SYS_YIELD       10
 #define SYS_MMAP        11
 #define SYS_MUNMAP      12
+#define SYS_SLEEP       13
+#define SYS_MUTEX_CREATE 14
+#define SYS_MUTEX_LOCK  15
+#define SYS_MUTEX_UNLOCK 16
+#define SYS_SEM_CREATE  17
+#define SYS_SEM_WAIT    18
+#define SYS_SEM_POST    19
+#define SYS_MSG_SEND    20
+#define SYS_MSG_RECV    21
+#define SYS_SHM_CREATE  22
+#define SYS_SHM_ATTACH  23
+#define SYS_SHM_DETACH  24
+
+/* ============================================
+ * IPC Constants
+ * ============================================ */
+#define MAX_IPC_CHANNELS    64
+#define MAX_MSG_SIZE        256
+#define MAX_SHM_REGIONS     32
+#define SEM_VALUE_MAX       32767
 
 /* ============================================
  * VGA/Framebuffer Constants
@@ -269,6 +344,20 @@ void sys_exit(int status);
 void sys_yield(void);
 s64 sys_getpid(void);
 s64 sys_write(int fd, const char *buf, size_t count);
+
+/* IPC & Synchronization syscalls */
+s64 sys_mutex_create(void);
+s64 sys_mutex_lock(s64 mutex_id);
+s64 sys_mutex_unlock(s64 mutex_id);
+s64 sys_sem_create(s32 initial_value);
+s64 sys_sem_wait(s64 sem_id);
+s64 sys_sem_post(s64 sem_id);
+s64 sys_msg_send(pid_t dest, u32 type, const void *data, u32 size);
+s64 sys_msg_recv(pid_t src, u32 type, void *buf, u32 max_size);
+s64 sys_shm_create(const char *name, u64 size);
+s64 sys_shm_attach(s64 shm_id);
+s64 sys_shm_detach(s64 shm_id);
+s64 sys_sleep(u64 ms);
 
 /* kernel/interrupt.c */
 void interrupt_init(void);
