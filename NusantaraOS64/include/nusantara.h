@@ -127,7 +127,7 @@ typedef struct {
     u64 virt_addr;
     u64 size;
     pid_t owner;
-    pid_t attached_procs[16];
+    u64 attached_procs[16];  /* Changed from pid_t to u64 to avoid sign-compare warning */
     u32 attach_count;
     bool kernel_mapped;
 } shm_region_t;
@@ -151,7 +151,7 @@ typedef struct process {
     u64 cr3;
     
     /* Informasi memori */
-    u64 *page_table;
+    void *page_table;  /* Changed from u64* to void* to avoid alignment warning */
     addr_t kernel_stack;
     addr_t user_stack;
     
