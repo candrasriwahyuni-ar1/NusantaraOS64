@@ -203,7 +203,7 @@ static int ahci_configure_port(ahci_port_t* port) {
 
 // Find and initialize AHCI controller
 int block_init(void) {
-    kprintf("[BLOCK] Initializing block device driver...\n");
+    console_printf("[BLOCK] Initializing block device driver...\n");
     
     // TODO: PCI enumeration untuk menemukan AHCI controller
     // Untuk saat ini, kita asumsikan AHCI sudah di-map oleh kernel early init
@@ -212,9 +212,9 @@ int block_init(void) {
     // Di implementasi nyata, ini akan melakukan PCI config space read
     
     // Simulasi: Asumsikan AHCI ditemukan
-    kprintf("[BLOCK] AHCI controller found (simulated)\n");
-    kprintf("[BLOCK] No physical drive detected in QEMU without -drive flag\n");
-    kprintf("[BLOCK] Use: qemu-system-x86_64 -drive format=raw,file=disk.img\n");
+    console_printf("[BLOCK] AHCI controller found (simulated)\n");
+    console_printf("[BLOCK] No physical drive detected in QEMU without -drive flag\n");
+    console_printf("[BLOCK] Use: qemu-system-x86_64 -drive format=raw,file=disk.img\n");
     
     // Return success tapi tanpa drive fisik
     // Ini memungkinkan VFS tetap berfungsi dengan initramfs saja
@@ -278,7 +278,7 @@ int block_read(uint64_t lba, uint32_t count, void* buffer) {
     }
     
     if (timeout <= 0) {
-        kprintf("[BLOCK] Read timeout at LBA %lu\n", lba);
+        console_printf("[BLOCK] Read timeout at LBA %lu\n", lba);
         return -ERR_TIMEOUT;
     }
     
@@ -341,7 +341,7 @@ int block_write(uint64_t lba, uint32_t count, const void* buffer) {
     }
     
     if (timeout <= 0) {
-        kprintf("[BLOCK] Write timeout at LBA %lu\n", lba);
+        console_printf("[BLOCK] Write timeout at LBA %lu\n", lba);
         return -ERR_TIMEOUT;
     }
     
@@ -371,34 +371,34 @@ int block_is_available(void) {
 
 // Test block device
 void block_test(void) {
-    kprintf("\n=== BLOCK DEVICE TEST ===\n");
+    console_printf("\n=== BLOCK DEVICE TEST ===\n");
     
     if (block_is_available()) {
         uint64_t total;
         uint32_t size;
         block_get_info(&total, &size);
-        kprintf("  Drive detected!\n");
-        kprintf("  Total sectors: %lu\n", total);
-        kprintf("  Sector size: %u bytes\n", size);
-        kprintf("  Capacity: %lu MB\n", (total * size) / (1024 * 1024));
+        console_printf("  Drive detected!\n");
+        console_printf("  Total sectors: %lu\n", total);
+        console_printf("  Sector size: %u bytes\n", size);
+        console_printf("  Capacity: %lu MB\n", (total * size) / (1024 * 1024));
         
         // Test read
         uint8_t buf[512];
         int ret = block_read(0, 1, buf);
         if (ret > 0) {
-            kprintf("  Read test: SUCCESS (%d sectors)\n", ret);
-            kprintf("  First 16 bytes: ");
+            console_printf("  Read test: SUCCESS (%d sectors)\n", ret);
+            console_printf("  First 16 bytes: ");
             for (int i = 0; i < 16; i++) {
-                kprintf("%02X ", buf[i]);
+                console_printf("%02X ", buf[i]);
             }
-            kprintf("\n");
+            console_printf("\n");
         } else {
-            kprintf("  Read test: FAILED (%d)\n", ret);
+            console_printf("  Read test: FAILED (%d)\n", ret);
         }
     } else {
-        kprintf("  No block device detected.\n");
-        kprintf("  To add a disk: qemu -drive format=raw,file=disk.img\n");
+        console_printf("  No block device detected.\n");
+        console_printf("  To add a disk: qemu -drive format=raw,file=disk.img\n");
     }
     
-    kprintf("=========================\n\n");
+    console_printf("=========================\n\n");
 }

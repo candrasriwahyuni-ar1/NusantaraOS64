@@ -20,6 +20,7 @@ static EFI_MEMORY_DESCRIPTOR *gMemoryMap = NULL;
 static UINTN gMemoryMapSize = 0;
 static UINTN gMemoryMapDescriptorSize = 0;
 static UINT32 gMemoryMapDescriptorVersion = 0;
+static UINTN gKey = 0;  /* ✅ ADDED: Required for ExitBootServices */
 
 /* Framebuffer info from UEFI */
 static EFI_GRAPHICS_OUTPUT_PROTOCOL *gGOP = NULL;
