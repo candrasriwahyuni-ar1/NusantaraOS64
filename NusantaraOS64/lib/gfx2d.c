@@ -220,7 +220,7 @@ static const uint8_t font_8x8[96][8] = {
 };
 
 void gfx_draw_char(uint32_t x, uint32_t y, char c, uint32_t color) {
-    if (c < 32 || c > 127) {
+    if (c < 32 || (u32)c > 127) {
         c = '?';
     }
     
@@ -280,7 +280,7 @@ int gfx_init(void *framebuffer, uint32_t width, uint32_t height, uint32_t pitch)
     gfx_ctx.pitch = pitch;
     gfx_ctx.pixel_format = 0;  // RGB
     
-    nusa_printf("[gfx] Initialized: %dx%d, pitch=%d\n", width, height, pitch);
+    console_printf("[gfx] Initialized: %dx%d, pitch=%d\n", width, height, pitch);
     
     return 0;
 }
@@ -290,7 +290,7 @@ int gfx_init(void *framebuffer, uint32_t width, uint32_t height, uint32_t pitch)
 // ============================================================================
 
 void gfx_demo(void) {
-    nusa_printf("[gfx] Running graphics demo...\n");
+    console_printf("[gfx] Running graphics demo...\n");
     
     // Clear to blue gradient
     for (uint32_t y = 0; y < gfx_ctx.height; y++) {
@@ -319,5 +319,5 @@ void gfx_demo(void) {
     gfx_draw_string(150, 50, "NusantaraOS64 Graphics Demo!", COLOR_WHITE);
     gfx_draw_string(150, 60, "Press any key to exit", COLOR_YELLOW);
     
-    nusa_printf("[gfx] Demo complete!\n");
+    console_printf("[gfx] Demo complete!\n");
 }

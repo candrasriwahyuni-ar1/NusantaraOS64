@@ -15,7 +15,7 @@ static u32 fb_pitch = FRAMEBUFFER_WIDTH;
 static bool fb_initialized = false;
 
 /* Font data (8x16 bitmap font - simplified) */
-static const u8 font_data[256][16] = {
+__attribute__((unused)) static const u8 font_data[256][16] = {
     /* Basic ASCII font would go here - using placeholder */
 };
 
@@ -138,6 +138,7 @@ void framebuffer_draw_circle(u32 cx, u32 cy, u32 radius, u32 color) {
  * In production, this would use a proper font bitmap
  */
 void framebuffer_draw_string(const char *str, u32 x, u32 y, u32 color) {
+    (void)x; (void)y; (void)color; /* Stub implementation - not yet using parameters */
     if (!fb_initialized || !str) return;
     
     /* For now, just print to console as fallback */
