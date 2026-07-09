@@ -51,6 +51,13 @@ void kernel_main(void) {
     console_print("[KERNEL] Initializing keyboard...\n");
     keyboard_init();
     
+    /* Initialize VFS and Block Device - Fase 8 */
+    console_print("[KERNEL] Initializing VFS...\n");
+    vfs_init();
+    
+    console_print("[KERNEL] Initializing block device driver...\n");
+    block_init();
+    
     /* Enable interrupts */
     console_print("[KERNEL] Enabling interrupts...\n");
     enable_interrupts();
@@ -97,6 +104,8 @@ void kernel_main(void) {
                 console_print("  c - Clear screen\n");
                 console_print("  t - Create test process\n");
                 console_print("  i - Test IPC (mutex, sem, shm)\n");
+                console_print("  f - Test VFS (read file, list dir)\n");
+                console_print("  b - Test block device\n");
                 console_print("  q - Quit (halt)\n");
                 console_print("--------------------------\n");
             } else if (c == 'p') {
@@ -138,6 +147,14 @@ void kernel_main(void) {
                     s64 addr = sys_shm_attach(shm_id);
                     console_printf("[IPC] Attached at virtual address: 0x%x\n", addr);
                 }
+            } else if (c == 'f') {
+                /* VFS Test - Fase 8 */
+                console_print("\n[VFS] Running VFS tests...\n");
+                vfs_test();
+            } else if (c == 'b') {
+                /* Block Device Test - Fase 8 */
+                console_print("\n[BLOCK] Running block device tests...\n");
+                block_test();
             } else if (c == 'q') {
                 console_print("\nShutting down...\n");
                 halt_cpu();

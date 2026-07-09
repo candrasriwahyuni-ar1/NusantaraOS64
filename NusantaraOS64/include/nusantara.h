@@ -293,6 +293,114 @@ typedef struct {
 #define SEM_VALUE_MAX       32767
 
 /* ============================================
+ * File System & VFS Structures
+ * ============================================ */
+
+/* File types */
+#define FILE_TYPE_NONE      0
+#define FILE_TYPE_FILE      1
+#define FILE_TYPE_DIR       2
+#define FILE_TYPE_CHAR      3
+#define FILE_TYPE_BLOCK     4
+
+/* File system types */
+#define FS_NONE             0
+#define FS_INITRAMFS        1
+#define FS_FAT32            2
+#define FS_EXT2             3
+
+/* File descriptor structure */
+typedef struct {
+    int fd;                 /* File descriptor number */
+    int type;               /* File type */
+    int is_open;            /* Flag */
+    u32 size;               /* File size */
+    u32 pos;                /* Current position */
+    void *data;             /* Data pointer (for initramfs) */
+    void *fs_specific;      /* Filesystem-specific data */
+    struct mount_point *mount;  /* Mount point */
+} vfs_file_t;
+
+/* Stat structure */
+typedef struct {
+    char name[256];         /* File name */
+    u32 type;               /* File type */
+    u32 size;               /* File size */
+    u64 blocks;             /* Number of blocks */
+    u64 atime;              /* Access time */
+    u64 mtime;              /* Modification time */
+    u64 ctime;              /* Change time */
+} stat_t;
+
+/* Directory entry structure */
+typedef struct {
+    char name[256];         /* Entry name */
+    u32 type;               /* Entry type */
+    u32 offset;             /* Offset for readdir */
+} dirent_t;
+
+/* File system operations */
+typedef struct {
+    int (*open)(struct mount_point *mp, const char *path);
+    int (*read)(vfs_file_t *file, void *buf, int size);
+    int (*write)(vfs_file_t *file, const void *buf, int size);
+    int (*close)(vfs_file_t *file);
+    int (*stat)(struct mount_point *mp, const char *path, stat_t *st);
+    int (*readdir)(struct mount_point *mp, const char *path, dirent_t *dirp);
+    int (*mkdir)(struct mount_point *mp, const char *path);
+    int (*unlink)(struct mount_point *mp, const char *path);
+} fs_ops_t;
+
+/* Mount point structure */
+typedef struct mount_point {
+    int mounted;            /* Mount flag */
+    char path[64];          /* Mount path */
+    int fs_type;            /* Filesystem type */
+    const char *device;     /* Device name */
+    fs_ops_t *ops;          /* Filesystem operations */
+    void *root;             /* Root directory info */
+} mount_point_t;
+
+/* ============================================
+ * Function Prototypes (VFS & Block Device)
+ * ============================================ */
+
+/* fs/vfs.c */
+void vfs_init(void);
+int vfs_open(const char *path, int flags);
+int vfs_read(int fd, void *buf, int size);
+int vfs_write(int fd, const void *buf, int size);
+int vfs_close(int fd);
+int vfs_stat(const char *path, stat_t *st);
+int vfs_readdir(const char *path, dirent_t *dirp);
+int vfs_mount(const char *device, const char *path, int fs_type);
+int vfs_unmount(const char *path);
+void vfs_list_mounts(void);
+void vfs_test(void);
+
+/* fs/block.c */
+int block_init(void);
+int block_read(u64 lba, u32 count, void *buffer);
+int block_write(u64 lba, u32 count, const void *buffer);
+int block_get_info(u64 *total_sectors, u32 *sector_size);
+int block_is_available(void);
+void block_test(void);
+
+/* ============================================
+ * Error Codes
+ * ============================================ */
+#define ERR_OK          0
+#define ERR_INVALID     -1
+#define ERR_NOTFOUND    -2
+#define ERR_NOMEM       -3
+#define ERR_TIMEOUT     -4
+#define ERR_NOTSUPP     -5
+#define ERR_READONLY    -6
+#define ERR_EXISTS      -7
+#define ERR_BUSY        -8
+#define ERR_NOENT       -9
+
+/* ============================================
  * VGA/Framebuffer Constants
  * ============================================ */
 #define FRAMEBUFFER_WIDTH     1920
@@ -383,6 +491,7 @@ void framebuffer_draw_string(const char *str, u32 x, u32 y, u32 color);
 void keyboard_init(void);
 char keyboard_getchar(void);
 bool keyboard_available(void);
+int keyboard_read(char *buf, int size);
 
 /* lib/string.c */
 size_t strlen(const char *str);
